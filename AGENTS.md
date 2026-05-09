@@ -104,7 +104,8 @@ Required for the backend to start (validated in `backend/src/lib/config.ts`):
 | `SESSION_SECRET` | 32+ byte secret for JWT signing                            |
 
 Optional: `PORT` (3000), `DB_PATH`, `TZ` (defaults to UTC; set to
-`Europe/Madrid` for the maintainer).
+`Europe/Madrid` for the maintainer), `COOKIE_SECURE` (`auto`|`true`|`false`,
+default `auto`).
 
 In dev the backend auto-loads `.env` from cwd or `../.env` (handwritten loader
 in `config.ts`, no `dotenv` dependency).
@@ -125,10 +126,13 @@ Two paths, both go through `requireAuth` middleware in
 Login response sets the cookie; the frontend uses `credentials: 'include'`.
 401 from `/api/*` redirects the SPA to `/login` (see `frontend/src/lib/api.ts`).
 
-The `Secure` cookie flag is set when `NODE_ENV=production`. **Local dev with
-`NODE_ENV=production` over plain HTTP will silently fail to authenticate**:
-the cookie is issued but never returned. Use `NODE_ENV=development` locally,
-or use API keys (which are header-based and unaffected).
+The `Secure` cookie flag is controlled by `COOKIE_SECURE` (default `auto`).
+In `auto` mode the flag is set when the request itself looks HTTPS — either
+`X-Forwarded-Proto: https` (set by a TLS-terminating reverse proxy) or a
+direct `https://` URL. Plain HTTP requests (e.g. `http://192.168.x.x:3030`)
+get a non-Secure cookie, so LAN deployments work without further config.
+Force on/off with `COOKIE_SECURE=true|false`. **Pitfall:** if the proxy does
+not forward `X-Forwarded-Proto`, set `COOKIE_SECURE=true` explicitly.
 
 ## DB schema
 
@@ -243,8 +247,9 @@ with `read:packages`.
   guarantee in the codebase.
 - The auth middleware order: session cookie tried first, then API key. Don't
   reverse it without thinking about CSRF.
-- `Secure` cookie flag in production. The fix for "cookie not coming back" in
-  dev is `NODE_ENV=development`, not removing the flag.
+- `Secure` cookie flag policy. Default `auto` derives from request protocol /
+  `X-Forwarded-Proto`. Override with `COOKIE_SECURE=true|false`; do not tie
+  it back to `NODE_ENV`.
 
 ## Working agreements with the maintainer (Spanish-speaking)
 

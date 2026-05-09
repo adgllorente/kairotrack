@@ -129,6 +129,7 @@ docker compose up -d --build
 | `PORT`           | no       | `3000`                | HTTP port                                                   |
 | `DB_PATH`        | no       | `/data/kairotrack.db` | SQLite file path                                            |
 | `TZ`             | no       | `UTC`                 | Timezone for grouping in dashboard / heatmap                |
+| `COOKIE_SECURE`  | no       | `auto`                | Session cookie `Secure` flag: `auto` (from request / `X-Forwarded-Proto`), `true`, or `false` |
 
 ## REST API
 

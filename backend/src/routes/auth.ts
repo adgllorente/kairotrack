@@ -1,4 +1,4 @@
-import { Hono } from 'hono';
+import { Hono, type Context } from 'hono';
 import { setCookie, deleteCookie, getCookie } from 'hono/cookie';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
@@ -14,6 +14,21 @@ const loginSchema = z.object({
 
 export const authRouter = new Hono();
 
+function isRequestSecure(c: Context): boolean {
+  const xfProto = c.req.header('x-forwarded-proto');
+  if (xfProto) return xfProto.split(',')[0].trim().toLowerCase() === 'https';
+  try {
+    return new URL(c.req.url).protocol === 'https:';
+  } catch {
+    return false;
+  }
+}
+
+function resolveCookieSecure(c: Context): boolean {
+  if (config.cookieSecure === 'auto') return isRequestSecure(c);
+  return config.cookieSecure;
+}
+
 authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
   const { user, password } = c.req.valid('json');
   if (user !== config.user || !bcrypt.compareSync(password, config.passwordHash)) {
@@ -23,7 +38,7 @@ authRouter.post('/login', zValidator('json', loginSchema), async (c) => {
   setCookie(c, SESSION_COOKIE, token, {
     httpOnly: true,
     sameSite: 'Lax',
-    secure: config.nodeEnv === 'production',
+    secure: resolveCookieSecure(c),
     path: '/',
     maxAge: 60 * 60 * 24 * 7,
   });

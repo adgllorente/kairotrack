@@ -40,6 +40,14 @@ function required(name: string): string {
   return v;
 }
 
+function parseCookieSecure(v: string | undefined): boolean | 'auto' {
+  if (v === undefined || v === '' || v === 'auto') return 'auto';
+  const lower = v.toLowerCase();
+  if (lower === 'true' || lower === '1') return true;
+  if (lower === 'false' || lower === '0') return false;
+  return 'auto';
+}
+
 export const config = {
   user: required('AUTH_USER'),
   passwordHash: bcrypt.hashSync(required('AUTH_PASSWORD'), 10),
@@ -47,4 +55,5 @@ export const config = {
   port: Number(process.env.PORT || 3000),
   tz: process.env.TZ || 'UTC',
   nodeEnv: process.env.NODE_ENV || 'development',
+  cookieSecure: parseCookieSecure(process.env.COOKIE_SECURE),
 };
