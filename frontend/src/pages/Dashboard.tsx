@@ -15,7 +15,15 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import { startOfMonth, startOfYear, subDays, addDays, format, getDay } from 'date-fns';
+import {
+  startOfMonth,
+  startOfWeek,
+  startOfYear,
+  subDays,
+  addDays,
+  format,
+  getDay,
+} from 'date-fns';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select-native';
@@ -28,11 +36,12 @@ import {
 } from '@/hooks/data';
 import { formatHours } from '@/lib/utils';
 
-type Range = '7d' | '30d' | 'month' | 'year' | 'all';
+type Range = '7d' | '30d' | 'week' | 'month' | 'year' | 'all';
 
 const RANGES: { value: Range; label: string }[] = [
   { value: '7d', label: 'Last 7 days' },
   { value: '30d', label: 'Last 30 days' },
+  { value: 'week', label: 'This week' },
   { value: 'month', label: 'This month' },
   { value: 'year', label: 'This year' },
   { value: 'all', label: 'All time' },
@@ -47,6 +56,11 @@ function rangeBounds(range: Range): {
   if (range === '7d') return { from: Math.floor(subDays(now, 7).getTime() / 1000), groupBy: 'day' };
   if (range === '30d')
     return { from: Math.floor(subDays(now, 30).getTime() / 1000), groupBy: 'day' };
+  if (range === 'week')
+    return {
+      from: Math.floor(startOfWeek(now, { weekStartsOn: 1 }).getTime() / 1000),
+      groupBy: 'day',
+    };
   if (range === 'month')
     return { from: Math.floor(startOfMonth(now).getTime() / 1000), groupBy: 'day' };
   if (range === 'year')
@@ -118,9 +132,10 @@ export function DashboardPage() {
         </div>
       </div>
 
-      <div className="grid sm:grid-cols-2 gap-4">
+      <div className="grid sm:grid-cols-3 gap-4">
         <StatCard title="Total" value={formatHours(totalSeconds)} />
         <StatCard title="Entries" value={String(summaryRows.reduce((a, r) => a + r.count, 0))} />
+        <StatCard title="Per week (avg)" value={formatPerWeek(totalSeconds, bounds.from)} />
       </div>
 
       <Card>
@@ -232,6 +247,15 @@ export function DashboardPage() {
       <Heatmap projectId={projectId} />
     </div>
   );
+}
+
+function formatPerWeek(totalSeconds: number, fromSec?: number): string {
+  if (fromSec === undefined) return '—';
+  const nowSec = Math.floor(Date.now() / 1000);
+  const weeks = (nowSec - fromSec) / (7 * 24 * 3600);
+  if (weeks < 1 / 7) return '—';
+  const hoursPerWeek = totalSeconds / 3600 / weeks;
+  return `${hoursPerWeek.toFixed(1)}h`;
 }
 
 function StatCard({ title, value }: { title: string; value: string }) {

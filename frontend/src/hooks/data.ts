@@ -203,13 +203,16 @@ export type ProjectSummaryRow = {
 };
 type HeatmapRow = { day: string; seconds: number };
 
-export function useStatsSummary(params: {
-  group_by: 'day' | 'week' | 'month' | 'year' | 'project';
-  from?: number;
-  to?: number;
-  project_id?: number;
-  task_id?: number;
-}) {
+export function useStatsSummary(
+  params: {
+    group_by: 'day' | 'week' | 'month' | 'year' | 'project';
+    from?: number;
+    to?: number;
+    project_id?: number;
+    task_id?: number;
+  },
+  options?: { enabled?: boolean },
+) {
   const qs = new URLSearchParams();
   Object.entries(params).forEach(([k, v]) => {
     if (v !== undefined) qs.set(k, String(v));
@@ -217,6 +220,7 @@ export function useStatsSummary(params: {
   return useQuery<SummaryRow[] | ProjectSummaryRow[]>({
     queryKey: ['stats', 'summary', params],
     queryFn: () => api.get(`/api/stats/summary?${qs.toString()}`),
+    enabled: options?.enabled,
   });
 }
 
