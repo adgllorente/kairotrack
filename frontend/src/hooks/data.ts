@@ -56,8 +56,12 @@ export function useTracks(params: {
 export function useStartTrack() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { project_id: number; task_id?: number | null; note?: string }) =>
-      api.post<Track>('/api/tracks/start', data),
+    mutationFn: (data: {
+      project_id: number;
+      task_id?: number | null;
+      note?: string;
+      started_at?: number;
+    }) => api.post<Track>('/api/tracks/start', data),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['tracks'] });
     },

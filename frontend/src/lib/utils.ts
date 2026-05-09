@@ -20,3 +20,13 @@ export function formatHours(seconds: number): string {
   if (h >= 10) return `${h.toFixed(1)}h`;
   return `${h.toFixed(2)}h`;
 }
+
+export function toLocalDateTimeInput(unix: number): string {
+  const d = new Date(unix * 1000);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+export function fromLocalDateTimeInput(s: string): number {
+  return Math.floor(new Date(s).getTime() / 1000);
+}

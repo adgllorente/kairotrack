@@ -23,19 +23,9 @@ import {
   useTracks,
   useUpdateTrack,
 } from '@/hooks/data';
-import { formatDuration } from '@/lib/utils';
+import { formatDuration, fromLocalDateTimeInput, toLocalDateTimeInput } from '@/lib/utils';
 import { toast } from 'sonner';
 import type { Track } from '@/lib/api';
-
-function toLocalDateTimeInput(unix: number): string {
-  const d = new Date(unix * 1000);
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-
-function fromLocalDateTimeInput(s: string): number {
-  return Math.floor(new Date(s).getTime() / 1000);
-}
 
 export function HistoryPage() {
   const [filterProject, setFilterProject] = useState<number | undefined>();

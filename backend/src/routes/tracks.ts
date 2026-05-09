@@ -10,6 +10,7 @@ const startSchema = z.object({
   project_id: z.number().int().positive(),
   task_id: z.number().int().positive().nullable().optional(),
   note: z.string().max(1000).optional(),
+  started_at: z.number().int().positive().optional(),
 });
 
 const manualSchema = z.object({
@@ -65,15 +66,22 @@ tracksRouter.get('/active', (c) => {
 });
 
 tracksRouter.post('/start', zValidator('json', startSchema), (c) => {
-  const { project_id, task_id, note } = c.req.valid('json');
+  const { project_id, task_id, note, started_at } = c.req.valid('json');
   const now = Math.floor(Date.now() / 1000);
+  const startTs = started_at ?? now;
+  if (startTs > now) {
+    return c.json({ error: 'started_at cannot be in the future' }, 400);
+  }
   const tx = db.transaction(() => {
-    const active = db.prepare('SELECT id FROM tracks WHERE ended_at IS NULL').get() as
-      | { id: number }
+    const active = db.prepare('SELECT id, started_at FROM tracks WHERE ended_at IS NULL').get() as
+      | { id: number; started_at: number }
       | undefined;
     if (active) {
+      if (startTs < active.started_at) {
+        throw new Error('started_at overlaps active track');
+      }
       db.prepare('UPDATE tracks SET ended_at = ?, updated_at = ? WHERE id = ?').run(
-        now,
+        startTs,
         now,
         active.id,
       );
@@ -82,10 +90,15 @@ tracksRouter.post('/start', zValidator('json', startSchema), (c) => {
       .prepare(
         'INSERT INTO tracks (project_id, task_id, note, started_at, updated_at) VALUES (?, ?, ?, ?, ?)',
       )
-      .run(project_id, task_id ?? null, note ?? '', now, now);
+      .run(project_id, task_id ?? null, note ?? '', startTs, now);
     return result.lastInsertRowid;
   });
-  const id = tx();
+  let id: number | bigint;
+  try {
+    id = tx();
+  } catch (e) {
+    return c.json({ error: e instanceof Error ? e.message : 'failed' }, 400);
+  }
   const row = db.prepare('SELECT * FROM tracks WHERE id = ?').get(id) as Track;
   return c.json(row, 201);
 });

@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { NativeSelect } from '@/components/ui/select-native';
 import { useActiveTrack, useProjects, useStartTrack, useStopTrack, useTasks } from '@/hooks/data';
-import { formatDuration } from '@/lib/utils';
+import { formatDuration, fromLocalDateTimeInput, toLocalDateTimeInput } from '@/lib/utils';
 import { toast } from 'sonner';
 
 export function TimerPage() {
@@ -19,6 +19,10 @@ export function TimerPage() {
   const [projectId, setProjectId] = useState<number | undefined>();
   const [taskId, setTaskId] = useState<number | undefined>();
   const [note, setNote] = useState('');
+  const [startedAt, setStartedAt] = useState(() =>
+    toLocalDateTimeInput(Math.floor(Date.now() / 1000)),
+  );
+  const [startedAtDirty, setStartedAtDirty] = useState(false);
   const tasks = useTasks(projectId);
 
   const activeId = active.data?.id;
@@ -27,6 +31,10 @@ export function TimerPage() {
       setProjectId(active.data.project_id);
       setTaskId(active.data.task_id ?? undefined);
       setNote(active.data.note);
+      setStartedAt(toLocalDateTimeInput(active.data.started_at));
+    } else {
+      setStartedAt(toLocalDateTimeInput(Math.floor(Date.now() / 1000)));
+      setStartedAtDirty(false);
     }
     // Only re-sync when the active track changes identity, not on every refetch.
   }, [activeId]); // eslint-disable-line react-hooks/exhaustive-deps
@@ -47,6 +55,12 @@ export function TimerPage() {
     if (!active.data) return 0;
     return now - active.data.started_at;
   }, [active.data, now]);
+
+  useEffect(() => {
+    if (!active.data && !startedAtDirty) {
+      setStartedAt(toLocalDateTimeInput(now));
+    }
+  }, [now, active.data, startedAtDirty]);
 
   const project = projects.data?.find((p) => p.id === active.data?.project_id);
   const task = tasks.data?.find((t) => t.id === active.data?.task_id);
@@ -143,6 +157,20 @@ export function TimerPage() {
             />
           </div>
 
+          <div className="space-y-1">
+            <Label>Start time</Label>
+            <Input
+              type="datetime-local"
+              value={startedAt}
+              max={toLocalDateTimeInput(now)}
+              onChange={(e) => {
+                setStartedAt(e.target.value);
+                setStartedAtDirty(true);
+              }}
+              disabled={!!active.data}
+            />
+          </div>
+
           <div className="flex gap-2">
             {active.data ? (
               <Button
@@ -161,15 +189,26 @@ export function TimerPage() {
                 size="lg"
                 onClick={async () => {
                   if (!projectId) return;
+                  const nowTs = Math.floor(Date.now() / 1000);
+                  const startTs = startedAtDirty
+                    ? startedAt
+                      ? fromLocalDateTimeInput(startedAt)
+                      : NaN
+                    : nowTs;
+                  if (!Number.isFinite(startTs) || startTs > nowTs) {
+                    toast.error('Invalid start time');
+                    return;
+                  }
                   try {
                     await start.mutateAsync({
                       project_id: projectId,
                       task_id: taskId ?? null,
                       note,
+                      started_at: startTs,
                     });
                     toast.success('Started');
-                  } catch {
-                    toast.error('Failed to start');
+                  } catch (e) {
+                    toast.error(e instanceof Error ? e.message : 'Failed to start');
                   }
                 }}
                 disabled={!projectId || start.isPending}
