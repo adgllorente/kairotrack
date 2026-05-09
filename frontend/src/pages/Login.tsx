@@ -1,11 +1,10 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Clock } from 'lucide-react';
 import { useLogin, useMe } from '@/hooks/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardDescription, CardHeader } from '@/components/ui/card';
 import { toast } from 'sonner';
 
 export function LoginPage() {
@@ -23,9 +22,11 @@ export function LoginPage() {
     <div className="min-h-dvh flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Clock className="size-5 text-primary" /> kairotrack
-          </CardTitle>
+          <img
+            src="/logo.svg"
+            alt="kairotrack"
+            className="h-9 w-auto dark:invert"
+          />
           <CardDescription>Sign in to your tracker</CardDescription>
         </CardHeader>
         <CardContent>

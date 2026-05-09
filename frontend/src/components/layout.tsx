@@ -1,6 +1,5 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import {
-  Clock,
   BarChart3,
   ListChecks,
   FolderKanban,
@@ -8,6 +7,7 @@ import {
   LogOut,
   Moon,
   Sun,
+  Clock,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useLogout } from '@/hooks/auth';
@@ -32,9 +32,11 @@ export function Layout() {
     <div className="min-h-dvh flex flex-col md:flex-row">
       <aside className="md:w-56 md:min-h-dvh md:flex md:flex-col md:border-r border-b md:border-b-0 bg-card">
         <div className="p-4 flex md:block items-center justify-between">
-          <div className="font-semibold flex items-center gap-2">
-            <Clock className="size-5 text-primary" /> kairotrack
-          </div>
+          <img
+            src="/logo.svg"
+            alt="kairotrack"
+            className="h-10 w-auto md:mx-auto dark:invert"
+          />
           <Button
             variant="ghost"
             size="icon"

@@ -1,0 +1,30 @@
+<svg width="1200" height="320" viewBox="0 0 1200 320" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Icon -->
+  <g transform="translate(40,40)">
+    <path d="M120 20C64.8 20 20 64.8 20 120C20 175.2 64.8 220 120 220C175.2 220 220 175.2 220 120"
+      stroke="#111111"
+      stroke-width="18"
+      stroke-linecap="round"
+      fill="none"/>
+
+    <!-- Clock hands -->
+    <path d="M120 75V128L160 158"
+      stroke="#111111"
+      stroke-width="18"
+      stroke-linecap="round"
+      stroke-linejoin="round"/>
+
+    <!-- Accent dot -->
+    <circle cx="185" cy="55" r="12" fill="#6C63FF"/>
+  </g>
+
+  <!-- Wordmark -->
+  <text x="320" y="190"
+    font-family="Inter, Arial, sans-serif"
+    font-size="140"
+    font-weight="600"
+    letter-spacing="-4"
+    fill="#111111">
+    kairotrack
+  </text>
+</svg>
