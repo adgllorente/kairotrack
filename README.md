@@ -29,15 +29,30 @@ moments you decide are worth spending. Hence Kairotrack.
 
 ## Quick start (Docker)
 
-Pre-built images are published to **GitHub Container Registry** on every push to
-`main` and on tagged releases:
+Pre-built multi-arch images (`linux/amd64`, `linux/arm64`) are published to
+**GitHub Container Registry** by the workflow at `.github/workflows/docker.yml`.
+
+| Trigger              | Tags published                           |
+| -------------------- | ---------------------------------------- |
+| Push to `main`       | `main`, `sha-<short>`                    |
+| Git tag `v1.2.3`     | `1.2.3`, `1.2`, `latest`, `sha-<short>`  |
+| Git tag `v1.2.3-rc1` | `1.2.3-rc1`, `sha-<short>` (no `latest`) |
+
+`latest` tracks the most recent **stable** tag, not `main`. Use `:main` if you
+want the bleeding edge.
 
 ```
 ghcr.io/adgllorente/kairotrack:latest
-ghcr.io/adgllorente/kairotrack:v1.0.0
+ghcr.io/adgllorente/kairotrack:1.0.0
+ghcr.io/adgllorente/kairotrack:main
 ```
 
-Multi-arch (`linux/amd64`, `linux/arm64`).
+To cut a release:
+
+```bash
+git tag -a v1.0.0 -m "Release 1.0.0"
+git push origin v1.0.0
+```
 
 If the package is private, authenticate first with a Personal Access Token that
 has the `read:packages` scope:

@@ -224,8 +224,12 @@ Multi-stage:
 - Builds `linux/amd64` and `linux/arm64` with QEMU.
 - Pushes to `ghcr.io/${{ github.repository }}` (resolves to
   `ghcr.io/adgllorente/kairotrack`).
-- Tags via `docker/metadata-action`: `latest` on main, `v1.2.3`, `1.2`,
-  `sha-abcd123`, branch name, PR ref.
+- Tags via `docker/metadata-action`:
+  - Push to `main` → `main`, `sha-<short>`
+  - Tag `v1.2.3` → `1.2.3`, `1.2`, `latest`, `sha-<short>`
+  - Tag `v1.2.3-rc.1` (any tag with `-`) → `1.2.3-rc.1`, `sha-<short>` (no `latest`)
+  - PR → `pr-<n>`, build-only, not pushed
+  - `latest` only moves on stable tag pushes, never on main.
 - Cache via GHA cache backend.
 
 Repo is private → image is private. Pulls from another machine require a PAT

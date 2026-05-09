@@ -38,13 +38,18 @@ jobs:
         uses: docker/metadata-action@v5
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          # Tagging strategy:
+          #   - main branch push        → main, sha-<short>
+          #   - tag v1.2.3              → 1.2.3, 1.2, latest, sha-<short>
+          #   - tag v1.2.3-rc.1         → 1.2.3-rc.1, sha-<short> (no `latest`)
+          #   - PR                      → pr-<number> (build only, not pushed)
           tags: |
             type=ref,event=branch
             type=ref,event=pr
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix=sha-,format=short
-            type=raw,value=latest,enable={{is_default_branch}}
+            type=raw,value=latest,enable=${{ startsWith(github.ref, 'refs/tags/v') && !contains(github.ref, '-') }}
 
       - name: Build and push
         uses: docker/build-push-action@v6
