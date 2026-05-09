@@ -1,0 +1,18 @@
+services:
+  kairotrack:
+    build: .
+    image: kairotrack:latest
+    container_name: kairotrack
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      AUTH_USER: ${AUTH_USER:-admin}
+      AUTH_PASSWORD: ${AUTH_PASSWORD:?set AUTH_PASSWORD in .env}
+      SESSION_SECRET: ${SESSION_SECRET:?set SESSION_SECRET in .env (32+ random chars)}
+      TZ: ${TZ:-Europe/Madrid}
+    volumes:
+      - kairotrack_data:/data
+
+volumes:
+  kairotrack_data:

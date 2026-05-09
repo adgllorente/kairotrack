@@ -1,0 +1,13 @@
+node_modules
+**/node_modules
+backend/dist
+frontend/dist
+data
+*.db*
+.git
+.env
+.env.local
+.DS_Store
+.vite
+coverage
+README.md
