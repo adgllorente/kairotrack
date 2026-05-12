@@ -97,6 +97,7 @@ export function HistoryPage() {
                 <th className="p-3 font-medium">Project / Task</th>
                 <th className="p-3 font-medium">Note</th>
                 <th className="p-3 font-medium">Started</th>
+                <th className="p-3 font-medium">Ended</th>
                 <th className="p-3 font-medium">Duration</th>
                 <th className="p-3 font-medium w-20"></th>
               </tr>
@@ -120,6 +121,9 @@ export function HistoryPage() {
                     <td className="p-3 text-muted-foreground whitespace-nowrap">
                       {format(t.started_at * 1000, 'yyyy-MM-dd HH:mm')}
                     </td>
+                    <td className="p-3 text-muted-foreground whitespace-nowrap">
+                      {t.ended_at ? format(t.ended_at * 1000, 'yyyy-MM-dd HH:mm') : '—'}
+                    </td>
                     <td className="p-3 font-mono tabular-nums whitespace-nowrap">
                       {formatDuration(duration)}
                       {t.ended_at === null && <span className="text-primary ml-1">●</span>}
@@ -136,7 +140,7 @@ export function HistoryPage() {
               })}
               {tracks.data?.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="p-8 text-center text-muted-foreground">
+                  <td colSpan={6} className="p-8 text-center text-muted-foreground">
                     No entries yet.
                   </td>
                 </tr>
