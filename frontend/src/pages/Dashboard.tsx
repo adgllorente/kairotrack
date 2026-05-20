@@ -1,7 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  Bar,
-  BarChart,
   CartesianGrid,
   Cell,
   Legend,
@@ -9,7 +7,6 @@ import {
   LineChart,
   Pie,
   PieChart,
-  ReferenceLine,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -24,6 +21,8 @@ import {
   format,
   getDay,
 } from 'date-fns';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { NativeSelect } from '@/components/ui/select-native';
@@ -31,9 +30,11 @@ import {
   useHeatmap,
   useProjects,
   useStatsSummary,
+  useTracks,
   type SummaryRow,
   type ProjectSummaryRow,
 } from '@/hooks/data';
+import type { Project, Track } from '@/lib/api';
 import { formatHours } from '@/lib/utils';
 
 type Range = '7d' | '30d' | 'week' | 'month' | 'year' | 'all';
@@ -99,86 +100,53 @@ export function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <div>
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <p className="text-sm text-muted-foreground">Time spent overview.</p>
-        </div>
-        <div className="flex gap-3 flex-wrap items-end">
-          <div>
-            <Label>Range</Label>
-            <NativeSelect value={range} onChange={(e) => setRange(e.target.value as Range)}>
-              {RANGES.map((r) => (
-                <option key={r.value} value={r.value}>
-                  {r.label}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-          <div>
-            <Label>Project</Label>
-            <NativeSelect
-              value={projectId ?? ''}
-              onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : undefined)}
-            >
-              <option value="">All</option>
-              {projects.data?.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.name}
-                </option>
-              ))}
-            </NativeSelect>
-          </div>
-        </div>
+      <div>
+        <h1 className="text-2xl font-bold">Dashboard</h1>
+        <p className="text-sm text-muted-foreground">Time spent overview.</p>
       </div>
 
-      <div className="grid sm:grid-cols-3 gap-4">
-        <StatCard title="Total" value={formatHours(totalSeconds)} />
-        <StatCard title="Entries" value={String(summaryRows.reduce((a, r) => a + r.count, 0))} />
-        <StatCard title="Per week (avg)" value={formatPerWeek(totalSeconds, bounds.from)} />
-      </div>
+      <Heatmap projectId={projectId} />
 
-      <Card>
-        <CardHeader>
-          <CardTitle>Time by {bounds.groupBy}</CardTitle>
-        </CardHeader>
-        <CardContent className="h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={summaryRows.map((r) => ({ ...r, hours: r.seconds / 3600 }))}>
-              <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-              <XAxis
-                dataKey="bucket"
-                stroke="currentColor"
-                className="text-xs text-muted-foreground"
-              />
-              <YAxis stroke="currentColor" className="text-xs text-muted-foreground" />
-              <Tooltip
-                contentStyle={{
-                  background: 'hsl(var(--popover))',
-                  border: '1px solid hsl(var(--border))',
-                }}
-                formatter={(v: number) => [`${v.toFixed(2)}h`, 'Hours']}
-              />
-              <Bar dataKey="hours" fill="#6366f1" radius={[4, 4, 0, 0]} />
-              {summaryRows.length > 0 && (
-                <ReferenceLine
-                  y={totalSeconds / 3600 / summaryRows.length}
-                  stroke="#ef4444"
-                  strokeDasharray="4 4"
-                  label={{
-                    value: `avg ${(totalSeconds / 3600 / summaryRows.length).toFixed(2)}h`,
-                    position: 'insideTopRight',
-                    fill: '#ef4444',
-                    fontSize: 11,
-                  }}
-                />
-              )}
-            </BarChart>
-          </ResponsiveContainer>
-        </CardContent>
-      </Card>
+      <WeeklyByProjectChart />
 
-      <div className="grid lg:grid-cols-2 gap-4">
+      <div className="border-t pt-6 space-y-6">
+        <div className="flex items-end justify-between flex-wrap gap-2">
+          <h2 className="text-lg font-semibold">Overview</h2>
+          <div className="flex gap-3 flex-wrap items-end">
+            <div>
+              <Label>Range</Label>
+              <NativeSelect value={range} onChange={(e) => setRange(e.target.value as Range)}>
+                {RANGES.map((r) => (
+                  <option key={r.value} value={r.value}>
+                    {r.label}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+            <div>
+              <Label>Project</Label>
+              <NativeSelect
+                value={projectId ?? ''}
+                onChange={(e) => setProjectId(e.target.value ? Number(e.target.value) : undefined)}
+              >
+                <option value="">All</option>
+                {projects.data?.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.name}
+                  </option>
+                ))}
+              </NativeSelect>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid sm:grid-cols-3 gap-4">
+          <StatCard title="Total" value={formatHours(totalSeconds)} />
+          <StatCard title="Entries" value={String(summaryRows.reduce((a, r) => a + r.count, 0))} />
+          <StatCard title="Per week (avg)" value={formatPerWeek(totalSeconds, bounds.from)} />
+        </div>
+
+        <div className="grid lg:grid-cols-2 gap-4">
         <Card>
           <CardHeader>
             <CardTitle>By project</CardTitle>
@@ -244,7 +212,7 @@ export function DashboardPage() {
         </Card>
       </div>
 
-      <Heatmap projectId={projectId} />
+      </div>
     </div>
   );
 }
@@ -269,6 +237,276 @@ function StatCard({ title, value }: { title: string; value: string }) {
       </CardContent>
     </Card>
   );
+}
+
+type WeekSegment = {
+  dayIdx: number;
+  startMin: number;
+  endMin: number;
+  project: Project;
+  note: string;
+};
+
+const PX_PER_HOUR = 36;
+const FALLBACK_HOUR_START = 8;
+const FALLBACK_HOUR_END = 18;
+
+function WeeklyByProjectChart() {
+  const [weekOffset, setWeekOffset] = useState(0);
+  const weekStart = useMemo(
+    () => addDays(startOfWeek(new Date(), { weekStartsOn: 1 }), weekOffset * 7),
+    [weekOffset],
+  );
+  const from = Math.floor(weekStart.getTime() / 1000);
+  const to = Math.floor(addDays(weekStart, 7).getTime() / 1000);
+  const tracks = useTracks({ from, to, limit: 5000 });
+  const projects = useProjects();
+
+  const { days, hourStart, hourEnd, segmentsByDay, usedProjects, dailyTotals, weekTotal } = useMemo(() => {
+    const dayList = Array.from({ length: 7 }, (_, i) => {
+      const d = addDays(weekStart, i);
+      return { date: d, label: format(d, 'EEE d') };
+    });
+    const pmap = new Map<number, Project>();
+    (projects.data || []).forEach((p) => pmap.set(p.id, p));
+
+    const nowSec = Math.floor(Date.now() / 1000);
+    const weekStartSec = Math.floor(weekStart.getTime() / 1000);
+    const segs: WeekSegment[] = [];
+
+    ((tracks.data as Track[] | undefined) || []).forEach((t) => {
+      const start = t.started_at;
+      const end = t.ended_at ?? nowSec;
+      if (end <= start) return;
+      const project = pmap.get(t.project_id) || {
+        id: t.project_id,
+        name: `#${t.project_id}`,
+        color: '#6366f1',
+        archived_at: null,
+        created_at: 0,
+      };
+      let cur = start;
+      while (cur < end) {
+        const dayIdx = Math.floor((cur - weekStartSec) / 86400);
+        if (dayIdx < 0 || dayIdx >= 7) break;
+        const dayStartSec = weekStartSec + dayIdx * 86400;
+        const dayEndSec = dayStartSec + 86400;
+        const segEnd = Math.min(end, dayEndSec);
+        segs.push({
+          dayIdx,
+          startMin: (cur - dayStartSec) / 60,
+          endMin: (segEnd - dayStartSec) / 60,
+          project,
+          note: t.note,
+        });
+        cur = segEnd;
+      }
+    });
+
+    let hStart = FALLBACK_HOUR_START;
+    let hEnd = FALLBACK_HOUR_END;
+    if (segs.length > 0) {
+      let minMin = Infinity;
+      let maxMin = -Infinity;
+      segs.forEach((s) => {
+        if (s.startMin < minMin) minMin = s.startMin;
+        if (s.endMin > maxMin) maxMin = s.endMin;
+      });
+      hStart = Math.max(0, Math.floor(minMin / 60) - 1);
+      hEnd = Math.min(24, Math.ceil(maxMin / 60) + 1);
+      if (hEnd <= hStart) hEnd = Math.min(24, hStart + 1);
+    }
+
+    const byDay: WeekSegment[][] = Array.from({ length: 7 }, () => []);
+    const totals: number[] = Array.from({ length: 7 }, () => 0);
+    segs.forEach((s) => {
+      byDay[s.dayIdx].push(s);
+      totals[s.dayIdx] += s.endMin - s.startMin;
+    });
+
+    const usedIds = new Set<number>();
+    segs.forEach((s) => usedIds.add(s.project.id));
+    const used = Array.from(usedIds)
+      .map((id) => pmap.get(id))
+      .filter((p): p is Project => Boolean(p))
+      .sort((a, b) => a.name.localeCompare(b.name));
+
+    return {
+      days: dayList,
+      hourStart: hStart,
+      hourEnd: hEnd,
+      segmentsByDay: byDay,
+      usedProjects: used,
+      dailyTotals: totals,
+      weekTotal: totals.reduce((a, b) => a + b, 0),
+    };
+  }, [tracks.data, projects.data, weekStart]);
+
+  const hourCount = hourEnd - hourStart;
+  const gridHeight = hourCount * PX_PER_HOUR;
+  const hourTicks = Array.from({ length: hourCount + 1 }, (_, i) => hourStart + i);
+  const dayMs = Date.now() - weekStart.getTime();
+  const todayIdx = dayMs >= 0 && dayMs < 7 * 86_400_000 ? Math.floor(dayMs / 86_400_000) : -1;
+  const weekEnd = addDays(weekStart, 6);
+  const rangeLabel =
+    weekStart.getMonth() === weekEnd.getMonth()
+      ? `${format(weekStart, 'd')} – ${format(weekEnd, 'd MMM yyyy')}`
+      : `${format(weekStart, 'd MMM')} – ${format(weekEnd, 'd MMM yyyy')}`;
+  let weekHeading: string;
+  if (weekOffset === 0) weekHeading = 'This week';
+  else if (weekOffset === -1) weekHeading = 'Last week';
+  else weekHeading = rangeLabel;
+
+  return (
+    <Card>
+      <CardHeader className="flex-row items-center justify-between space-y-0 gap-2">
+        <CardTitle className="flex items-baseline gap-2">
+          <span>{weekHeading} by project</span>
+          {weekHeading !== rangeLabel && (
+            <span className="text-xs font-normal text-muted-foreground">{rangeLabel}</span>
+          )}
+          <span className="text-xs font-normal text-muted-foreground">
+            · {formatMinutesShort(weekTotal)} total
+          </span>
+        </CardTitle>
+        <div className="flex items-center gap-1">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setWeekOffset((o) => o - 1)}
+            aria-label="Previous week"
+          >
+            <ChevronLeft />
+          </Button>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setWeekOffset(0)}
+            disabled={weekOffset === 0}
+          >
+            Today
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setWeekOffset((o) => o + 1)}
+            aria-label="Next week"
+            disabled={weekOffset >= 0}
+          >
+            <ChevronRight />
+          </Button>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="grid grid-cols-[3rem_1fr] gap-x-2 text-xs">
+          <div />
+          <div className="grid grid-cols-7 gap-px text-center pb-1">
+            {days.map((d, i) => (
+              <div
+                key={i}
+                className={`flex flex-col leading-tight ${i === todayIdx ? 'text-foreground' : 'text-muted-foreground'}`}
+              >
+                <span className="font-medium">{d.label}</span>
+                <span
+                  className={`text-[10px] tabular-nums ${dailyTotals[i] > 0 ? '' : 'opacity-40'}`}
+                >
+                  {formatMinutesShort(dailyTotals[i])}
+                </span>
+              </div>
+            ))}
+          </div>
+          <div className="relative text-muted-foreground tabular-nums" style={{ height: gridHeight }}>
+            {hourTicks.map((h, i) => (
+              <div
+                key={h}
+                className="absolute right-0 -translate-y-1/2 pr-1"
+                style={{ top: i * PX_PER_HOUR }}
+              >
+                {String(h).padStart(2, '0')}:00
+              </div>
+            ))}
+          </div>
+          <div
+            className="relative grid grid-cols-7 gap-px rounded-md border border-border bg-border overflow-hidden"
+            style={{ height: gridHeight }}
+          >
+            {days.map((_, i) => (
+              <div
+                key={i}
+                className={`relative ${i === todayIdx ? 'bg-muted/40' : 'bg-background'}`}
+              >
+                {hourTicks.slice(1, -1).map((_, hi) => (
+                  <div
+                    key={hi}
+                    className="absolute inset-x-0 border-t border-border/50"
+                    style={{ top: (hi + 1) * PX_PER_HOUR }}
+                  />
+                ))}
+                {segmentsByDay[i].map((s, si) => {
+                  const top = ((s.startMin / 60) - hourStart) * PX_PER_HOUR;
+                  const height = Math.max(2, ((s.endMin - s.startMin) / 60) * PX_PER_HOUR);
+                  return (
+                    <div
+                      key={si}
+                      className="absolute inset-x-0.5 rounded-sm px-1 overflow-hidden text-[10px] leading-tight text-white shadow-sm"
+                      style={{
+                        top,
+                        height,
+                        backgroundColor: s.project.color,
+                      }}
+                      title={`${s.project.name}${s.note ? ` — ${s.note}` : ''}\n${formatMinHM(s.startMin)} – ${formatMinHM(s.endMin)} (${formatDurationHM(s.endMin - s.startMin)})`}
+                    >
+                      {height > 16 && <div className="font-medium truncate">{s.project.name}</div>}
+                      {height > 30 && (
+                        <div className="opacity-80 tabular-nums">
+                          {formatMinHM(s.startMin)}–{formatMinHM(s.endMin)}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        </div>
+        {usedProjects.length > 0 && (
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-muted-foreground">
+            {usedProjects.map((p) => (
+              <div key={p.id} className="flex items-center gap-1.5">
+                <span
+                  className="inline-block size-3 rounded-sm"
+                  style={{ backgroundColor: p.color }}
+                />
+                {p.name}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function formatMinutesShort(m: number): string {
+  if (m <= 0) return '0h';
+  const h = Math.floor(m / 60);
+  const mm = Math.round(m % 60);
+  if (h === 0) return `${mm}m`;
+  if (mm === 0) return `${h}h`;
+  return `${h}h ${mm}m`;
+}
+
+function formatDurationHM(m: number): string {
+  const total = Math.max(0, Math.round(m));
+  const h = Math.floor(total / 60);
+  const mm = total % 60;
+  return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
+}
+
+function formatMinHM(m: number): string {
+  const h = Math.floor(m / 60);
+  const mm = Math.floor(m % 60);
+  return `${String(h).padStart(2, '0')}:${String(mm).padStart(2, '0')}`;
 }
 
 function Heatmap({ projectId }: { projectId?: number }) {
