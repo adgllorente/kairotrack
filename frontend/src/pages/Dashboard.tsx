@@ -400,20 +400,64 @@ function WeeklyByProjectChart() {
       <CardContent>
         <div className="grid grid-cols-[3rem_1fr] gap-x-2 text-xs">
           <div />
-          <div className="grid grid-cols-7 gap-px text-center pb-1">
-            {days.map((d, i) => (
-              <div
-                key={i}
-                className={`flex flex-col leading-tight ${i === todayIdx ? 'text-foreground' : 'text-muted-foreground'}`}
-              >
-                <span className="font-medium">{d.label}</span>
-                <span
-                  className={`text-[10px] tabular-nums ${dailyTotals[i] > 0 ? '' : 'opacity-40'}`}
+          <div className="row-span-2 overflow-x-auto sm:overflow-visible">
+            <div className="grid w-max sm:w-auto grid-cols-[repeat(7,calc((100vw_-_7.5rem)/3))] sm:grid-cols-7 gap-px text-center pb-1">
+              {days.map((d, i) => (
+                <div
+                  key={i}
+                  className={`flex flex-col leading-tight ${i === todayIdx ? 'text-foreground' : 'text-muted-foreground'}`}
                 >
-                  {formatMinutesShort(dailyTotals[i])}
-                </span>
-              </div>
-            ))}
+                  <span className="font-medium">{d.label}</span>
+                  <span
+                    className={`text-[10px] tabular-nums ${dailyTotals[i] > 0 ? '' : 'opacity-40'}`}
+                  >
+                    {formatMinutesShort(dailyTotals[i])}
+                  </span>
+                </div>
+              ))}
+            </div>
+            <div
+              className="relative grid w-max sm:w-auto grid-cols-[repeat(7,calc((100vw_-_7.5rem)/3))] sm:grid-cols-7 gap-px rounded-md border border-border bg-border overflow-hidden"
+              style={{ height: gridHeight }}
+            >
+              {days.map((_, i) => (
+                <div
+                  key={i}
+                  className={`relative ${i === todayIdx ? 'bg-muted/40' : 'bg-background'}`}
+                >
+                  {hourTicks.slice(1, -1).map((_, hi) => (
+                    <div
+                      key={hi}
+                      className="absolute inset-x-0 border-t border-border/50"
+                      style={{ top: (hi + 1) * PX_PER_HOUR }}
+                    />
+                  ))}
+                  {segmentsByDay[i].map((s, si) => {
+                    const top = ((s.startMin / 60) - hourStart) * PX_PER_HOUR;
+                    const height = Math.max(2, ((s.endMin - s.startMin) / 60) * PX_PER_HOUR);
+                    return (
+                      <div
+                        key={si}
+                        className="absolute inset-x-0.5 rounded-sm px-1 overflow-hidden text-[10px] leading-tight text-white shadow-sm"
+                        style={{
+                          top,
+                          height,
+                          backgroundColor: s.project.color,
+                        }}
+                        title={`${s.project.name}${s.note ? ` — ${s.note}` : ''}\n${formatMinHM(s.startMin)} – ${formatMinHM(s.endMin)} (${formatDurationHM(s.endMin - s.startMin)})`}
+                      >
+                        {height > 16 && <div className="font-medium truncate">{s.project.name}</div>}
+                        {height > 30 && (
+                          <div className="opacity-80 tabular-nums">
+                            {formatMinHM(s.startMin)}–{formatMinHM(s.endMin)}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              ))}
+            </div>
           </div>
           <div className="relative text-muted-foreground tabular-nums" style={{ height: gridHeight }}>
             {hourTicks.map((h, i) => (
@@ -423,48 +467,6 @@ function WeeklyByProjectChart() {
                 style={{ top: i * PX_PER_HOUR }}
               >
                 {String(h).padStart(2, '0')}:00
-              </div>
-            ))}
-          </div>
-          <div
-            className="relative grid grid-cols-7 gap-px rounded-md border border-border bg-border overflow-hidden"
-            style={{ height: gridHeight }}
-          >
-            {days.map((_, i) => (
-              <div
-                key={i}
-                className={`relative ${i === todayIdx ? 'bg-muted/40' : 'bg-background'}`}
-              >
-                {hourTicks.slice(1, -1).map((_, hi) => (
-                  <div
-                    key={hi}
-                    className="absolute inset-x-0 border-t border-border/50"
-                    style={{ top: (hi + 1) * PX_PER_HOUR }}
-                  />
-                ))}
-                {segmentsByDay[i].map((s, si) => {
-                  const top = ((s.startMin / 60) - hourStart) * PX_PER_HOUR;
-                  const height = Math.max(2, ((s.endMin - s.startMin) / 60) * PX_PER_HOUR);
-                  return (
-                    <div
-                      key={si}
-                      className="absolute inset-x-0.5 rounded-sm px-1 overflow-hidden text-[10px] leading-tight text-white shadow-sm"
-                      style={{
-                        top,
-                        height,
-                        backgroundColor: s.project.color,
-                      }}
-                      title={`${s.project.name}${s.note ? ` — ${s.note}` : ''}\n${formatMinHM(s.startMin)} – ${formatMinHM(s.endMin)} (${formatDurationHM(s.endMin - s.startMin)})`}
-                    >
-                      {height > 16 && <div className="font-medium truncate">{s.project.name}</div>}
-                      {height > 30 && (
-                        <div className="opacity-80 tabular-nums">
-                          {formatMinHM(s.startMin)}–{formatMinHM(s.endMin)}
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
               </div>
             ))}
           </div>
