@@ -228,6 +228,27 @@ export function useStatsSummary(
   });
 }
 
+export type ImportResult = {
+  imported: number;
+  skipped: number;
+  projects_created: number;
+  tasks_created: number;
+  errors: string[];
+};
+
+export function useImportTracks() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (payload: unknown) => api.post<ImportResult>('/api/import', payload),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['projects'] });
+      qc.invalidateQueries({ queryKey: ['tasks'] });
+      qc.invalidateQueries({ queryKey: ['tracks'] });
+      qc.invalidateQueries({ queryKey: ['stats'] });
+    },
+  });
+}
+
 export function useHeatmap(year: number, projectId?: number) {
   const qs = new URLSearchParams({ year: String(year) });
   if (projectId) qs.set('project_id', String(projectId));

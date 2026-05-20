@@ -11,6 +11,7 @@ import { tasksRouter } from './routes/tasks.js';
 import { tracksRouter } from './routes/tracks.js';
 import { statsRouter } from './routes/stats.js';
 import { exportRouter } from './routes/export.js';
+import { importRouter } from './routes/import.js';
 import { keysRouter } from './routes/keys.js';
 import { requireAuth } from './middleware/auth.js';
 
@@ -28,6 +29,7 @@ api.route('/tasks', tasksRouter);
 api.route('/tracks', tracksRouter);
 api.route('/stats', statsRouter);
 api.route('/export', exportRouter);
+api.route('/import', importRouter);
 api.route('/keys', keysRouter);
 app.route('/api', api);
 
