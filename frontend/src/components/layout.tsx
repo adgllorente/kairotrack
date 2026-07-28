@@ -83,6 +83,12 @@ export function Layout() {
           >
             <LogOut className="size-4" /> Logout
           </Button>
+          <p
+            className="px-3 pt-2 text-[10px] leading-tight text-muted-foreground font-mono tabular-nums"
+            title={`kairotrack v${__APP_VERSION__} (${__GIT_COMMIT__})`}
+          >
+            v{__APP_VERSION__} · {__GIT_COMMIT__}
+          </p>
         </div>
       </aside>
       <main className="flex-1 flex flex-col">
@@ -90,6 +96,9 @@ export function Layout() {
         <div className="flex-1 p-4 md:p-8 max-w-7xl w-full mx-auto">
           <Outlet />
         </div>
+        <footer className="md:hidden px-4 pb-3 text-center text-[10px] text-muted-foreground font-mono tabular-nums">
+          v{__APP_VERSION__} · {__GIT_COMMIT__}
+        </footer>
       </main>
     </div>
   );

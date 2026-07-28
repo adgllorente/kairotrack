@@ -7,6 +7,10 @@ COPY frontend/package.json frontend/
 RUN npm ci
 COPY backend ./backend
 COPY frontend ./frontend
+ARG GIT_COMMIT=unknown
+ARG APP_VERSION=
+ENV VITE_GIT_COMMIT=$GIT_COMMIT \
+    VITE_APP_VERSION=$APP_VERSION
 RUN npm run build
 
 FROM node:22-alpine AS runtime

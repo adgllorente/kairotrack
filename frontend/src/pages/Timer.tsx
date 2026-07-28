@@ -194,8 +194,11 @@ export function TimerPage() {
                     ? startedAt
                       ? fromLocalDateTimeInput(startedAt)
                       : NaN
-                    : nowTs;
-                  if (!Number.isFinite(startTs) || startTs > nowTs) {
+                    : undefined;
+                  if (
+                    startTs !== undefined &&
+                    (!Number.isFinite(startTs) || startTs > nowTs + 60)
+                  ) {
                     toast.error('Invalid start time');
                     return;
                   }
@@ -204,7 +207,7 @@ export function TimerPage() {
                       project_id: projectId,
                       task_id: taskId ?? null,
                       note,
-                      started_at: startTs,
+                      ...(startTs !== undefined ? { started_at: startTs } : {}),
                     });
                     toast.success('Started');
                   } catch (e) {

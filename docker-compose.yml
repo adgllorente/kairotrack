@@ -1,6 +1,9 @@
 services:
   kairotrack:
-    build: .
+    build:
+      context: .
+      args:
+        GIT_COMMIT: ${GIT_COMMIT:-unknown}
     image: kairotrack:latest
     container_name: kairotrack
     restart: unless-stopped

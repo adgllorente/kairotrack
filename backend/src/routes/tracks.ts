@@ -65,12 +65,19 @@ tracksRouter.get('/active', (c) => {
   return c.json(row || null);
 });
 
+/** Allow client clocks a few seconds ahead of the server. */
+const CLOCK_SKEW_SECONDS = 60;
+
 tracksRouter.post('/start', zValidator('json', startSchema), (c) => {
   const { project_id, task_id, note, started_at } = c.req.valid('json');
   const now = Math.floor(Date.now() / 1000);
-  const startTs = started_at ?? now;
+  let startTs = started_at ?? now;
   if (startTs > now) {
-    return c.json({ error: 'started_at cannot be in the future' }, 400);
+    if (startTs <= now + CLOCK_SKEW_SECONDS) {
+      startTs = now;
+    } else {
+      return c.json({ error: 'started_at cannot be in the future' }, 400);
+    }
   }
   const tx = db.transaction(() => {
     const active = db.prepare('SELECT id, started_at FROM tracks WHERE ended_at IS NULL').get() as
