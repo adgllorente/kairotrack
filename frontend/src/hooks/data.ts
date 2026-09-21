@@ -6,6 +6,8 @@ import {
   type Track,
   type ApiKey,
   type ApiKeyCreated,
+  type TelegramGoal,
+  type TelegramStatus,
 } from '@/lib/api';
 
 export function useProjects(includeArchived = false) {
@@ -255,5 +257,83 @@ export function useHeatmap(year: number, projectId?: number) {
   return useQuery({
     queryKey: ['stats', 'heatmap', year, projectId],
     queryFn: () => api.get<HeatmapRow[]>(`/api/stats/heatmap?${qs.toString()}`),
+  });
+}
+
+export function useTelegramStatus() {
+  return useQuery({
+    queryKey: ['telegram', 'status'],
+    queryFn: () => api.get<TelegramStatus>('/api/telegram/status'),
+    refetchInterval: 10_000,
+  });
+}
+
+export function useTelegramGoals() {
+  return useQuery({
+    queryKey: ['telegram', 'goals'],
+    queryFn: () => api.get<TelegramGoal[]>('/api/telegram/goals'),
+  });
+}
+
+export function useTestTelegram() {
+  return useMutation({
+    mutationFn: (token: string) =>
+      api.post<{ ok: true; username: string }>('/api/telegram/test', { token }),
+  });
+}
+
+export function useConfigureTelegram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (token: string) =>
+      api.post<{ ok: true; username: string }>('/api/telegram/configure', { token }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['telegram'] }),
+  });
+}
+
+export function useDeleteTelegram() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: () => api.del('/api/telegram/config'),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['telegram'] }),
+  });
+}
+
+export function useCreateTelegramLinkCode() {
+  return useMutation({
+    mutationFn: () => api.post<{ code: string; expires_at: number }>('/api/telegram/link-code'),
+  });
+}
+
+export function useCreateTelegramGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (data: { project_id?: number | null; target_minutes: number; enabled?: boolean }) =>
+      api.post<TelegramGoal>('/api/telegram/goals', data),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['telegram', 'goals'] }),
+  });
+}
+
+export function useUpdateTelegramGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      id,
+      target_minutes,
+      enabled,
+    }: {
+      id: number;
+      target_minutes?: number;
+      enabled?: boolean;
+    }) => api.patch<TelegramGoal>('/api/telegram/goals/' + id, { target_minutes, enabled }),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['telegram', 'goals'] }),
+  });
+}
+
+export function useDeleteTelegramGoal() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (id: number) => api.del('/api/telegram/goals/' + id),
+    onSuccess: () => qc.invalidateQueries({ queryKey: ['telegram', 'goals'] }),
   });
 }

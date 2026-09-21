@@ -121,14 +121,14 @@ docker compose up -d --build
 
 ## Environment variables
 
-| Var              | Required | Default               | Description                                                 |
-| ---------------- | -------- | --------------------- | ----------------------------------------------------------- |
-| `AUTH_USER`      | yes      | —                     | Username for the single user                                |
-| `AUTH_PASSWORD`  | yes      | —                     | Plain password (hashed with bcrypt at boot, kept in memory) |
-| `SESSION_SECRET` | yes      | —                     | Random 32+ byte secret used to sign session cookies         |
-| `PORT`           | no       | `3000`                | HTTP port                                                   |
-| `DB_PATH`        | no       | `/data/kairotrack.db` | SQLite file path                                            |
-| `TZ`             | no       | `UTC`                 | Timezone for grouping in dashboard / heatmap                |
+| Var              | Required | Default               | Description                                                                                   |
+| ---------------- | -------- | --------------------- | --------------------------------------------------------------------------------------------- |
+| `AUTH_USER`      | yes      | —                     | Username for the single user                                                                  |
+| `AUTH_PASSWORD`  | yes      | —                     | Plain password (hashed with bcrypt at boot, kept in memory)                                   |
+| `SESSION_SECRET` | yes      | —                     | Random 32+ byte secret used to sign session cookies                                           |
+| `PORT`           | no       | `3000`                | HTTP port                                                                                     |
+| `DB_PATH`        | no       | `/data/kairotrack.db` | SQLite file path                                                                              |
+| `TZ`             | no       | `UTC`                 | Timezone for grouping in dashboard / heatmap                                                  |
 | `COOKIE_SECURE`  | no       | `auto`                | Session cookie `Secure` flag: `auto` (from request / `X-Forwarded-Proto`), `true`, or `false` |
 
 ## REST API
@@ -181,3 +181,14 @@ docker run --rm -v kairotrack_data:/data -v $(pwd):/backup alpine \
 ## License
 
 MIT
+
+## Telegram
+
+Kairotrack can run a Telegram bot in the same backend container using long polling. No extra service, port, public webhook URL, or Telegram environment variable is required.
+
+1. Open @BotFather in Telegram and use /newbot.
+2. Copy the token and paste it into Kairotrack Settings -> Telegram.
+3. Generate a linking code in Settings and send /link CODE to the new bot.
+4. Use /start, /link CODE, /active, /stop, /today, /week, and /help from Telegram.
+
+The token is encrypted with SESSION_SECRET before it is stored in SQLite. Configure one daily total goal and/or one daily goal per project in Settings. The bot checks goals every minute while a track is active and sends one notification when each goal is reached for the local day.

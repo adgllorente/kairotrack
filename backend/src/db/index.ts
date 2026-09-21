@@ -48,3 +48,23 @@ export type ApiKey = {
   created_at: number;
   revoked_at: number | null;
 };
+
+export type TelegramConfig = {
+  id: number;
+  token_encrypted: string;
+  chat_id: string | null;
+  bot_username: string | null;
+  enabled: number;
+  created_at: number;
+  updated_at: number;
+};
+
+export type TelegramGoal = {
+  id: number;
+  project_id: number | null;
+  target_seconds: number;
+  enabled: number;
+  last_notified_day: string | null;
+  created_at: number;
+  updated_at: number;
+};

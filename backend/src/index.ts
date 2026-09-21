@@ -13,6 +13,8 @@ import { statsRouter } from './routes/stats.js';
 import { exportRouter } from './routes/export.js';
 import { importRouter } from './routes/import.js';
 import { keysRouter } from './routes/keys.js';
+import { telegramRouter } from './routes/telegram.js';
+import { restartTelegram, stopTelegram } from './lib/telegram.js';
 import { requireAuth } from './middleware/auth.js';
 
 const app = new Hono();
@@ -31,6 +33,7 @@ api.route('/stats', statsRouter);
 api.route('/export', exportRouter);
 api.route('/import', importRouter);
 api.route('/keys', keysRouter);
+api.route('/telegram', telegramRouter);
 app.route('/api', api);
 
 const FRONTEND_DIR = process.env.FRONTEND_DIR || join(process.cwd(), 'frontend/dist');
@@ -53,4 +56,12 @@ if (hasFrontend) {
 
 serve({ fetch: app.fetch, port: config.port, hostname: '0.0.0.0' }, (info) => {
   console.log(`kairotrack listening on http://${info.address}:${info.port} (TZ=${config.tz})`);
+  void restartTelegram().catch((error) => console.error('Telegram startup failed:', error));
+});
+
+process.once('SIGTERM', () => {
+  void stopTelegram();
+});
+process.once('SIGINT', () => {
+  void stopTelegram();
 });

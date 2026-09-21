@@ -47,4 +47,36 @@ CREATE TABLE IF NOT EXISTS meta (
   key   TEXT PRIMARY KEY,
   value TEXT NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS telegram_config (
+  id                INTEGER PRIMARY KEY CHECK (id = 1),
+  token_encrypted   TEXT NOT NULL,
+  chat_id           TEXT,
+  bot_username      TEXT,
+  enabled           INTEGER NOT NULL DEFAULT 1,
+  created_at        INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at        INTEGER NOT NULL DEFAULT (unixepoch())
+);
+
+CREATE TABLE IF NOT EXISTS telegram_link_codes (
+  id          INTEGER PRIMARY KEY AUTOINCREMENT,
+  code_hash   TEXT NOT NULL UNIQUE,
+  expires_at  INTEGER NOT NULL,
+  used_at     INTEGER,
+  created_at  INTEGER NOT NULL DEFAULT (unixepoch())
+);
+CREATE INDEX IF NOT EXISTS idx_telegram_link_codes_expiry ON telegram_link_codes(expires_at);
+
+CREATE TABLE IF NOT EXISTS telegram_goals (
+  id                   INTEGER PRIMARY KEY AUTOINCREMENT,
+  project_id           INTEGER REFERENCES projects(id) ON DELETE CASCADE,
+  target_seconds       INTEGER NOT NULL CHECK (target_seconds > 0),
+  enabled              INTEGER NOT NULL DEFAULT 1,
+  last_notified_day    TEXT,
+  created_at           INTEGER NOT NULL DEFAULT (unixepoch()),
+  updated_at           INTEGER NOT NULL DEFAULT (unixepoch()),
+  CHECK (project_id IS NULL OR project_id > 0)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS uniq_telegram_goal_scope
+  ON telegram_goals(COALESCE(project_id, 0));
 `;

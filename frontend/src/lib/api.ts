@@ -71,3 +71,21 @@ export type ApiKey = {
   revoked_at: number | null;
 };
 export type ApiKeyCreated = ApiKey & { key: string };
+
+export type TelegramStatus = {
+  configured: boolean;
+  enabled: boolean;
+  linked: boolean;
+  username: string | null;
+  running: boolean;
+};
+export type TelegramGoal = {
+  id: number;
+  project_id: number | null;
+  target_seconds: number;
+  target_minutes: number;
+  enabled: boolean;
+  last_notified_day: string | null;
+  created_at: number;
+  updated_at: number;
+};

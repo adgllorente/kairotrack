@@ -24,6 +24,7 @@ import {
 import { useTheme } from '@/components/theme-provider';
 import { NativeSelect } from '@/components/ui/select-native';
 import { toast } from 'sonner';
+import { TelegramSettings } from '@/components/telegram-settings';
 
 export function SettingsPage() {
   const keys = useApiKeys();
@@ -84,6 +85,8 @@ export function SettingsPage() {
           </div>
         </CardContent>
       </Card>
+
+      <TelegramSettings />
 
       <Card>
         <CardHeader>
