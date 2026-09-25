@@ -26,33 +26,27 @@ function localWeekday(): number {
   return (row.weekday + 6) % 7;
 }
 
-function dailyWorkLimit(): number | null {
-  const row = db.prepare('SELECT value FROM meta WHERE key = ?').get('work_settings') as
-    | { value: string }
-    | undefined;
+function dailyTelegramLimits(): (number | null)[] | null {
+  const row =
+    (db.prepare('SELECT value FROM meta WHERE key = ?').get('telegram_daily_limits') as
+      | { value: string }
+      | undefined) ??
+    (db.prepare('SELECT value FROM meta WHERE key = ?').get('work_settings') as
+      | { value: string }
+      | undefined);
   if (!row) return null;
   try {
-    const settings = JSON.parse(row.value) as { daily_limits?: unknown };
-    if (!Array.isArray(settings.daily_limits) || settings.daily_limits.length !== 7) return null;
-    const value = settings.daily_limits[localWeekday()];
-    return typeof value === 'number' && Number.isFinite(value) && value > 0 ? value * 3600 : null;
+    const parsed = JSON.parse(row.value) as { daily_limits?: unknown } | unknown;
+    const values = Array.isArray(parsed)
+      ? parsed
+      : (parsed as { daily_limits?: unknown }).daily_limits;
+    if (!Array.isArray(values) || values.length !== 7) return null;
+    return values.map((value) =>
+      typeof value === 'number' && Number.isFinite(value) && value > 0 ? value : null,
+    );
   } catch {
     return null;
   }
-}
-
-function getMeta(key: string): string | null {
-  const row = db.prepare('SELECT value FROM meta WHERE key = ?').get(key) as
-    | { value: string }
-    | undefined;
-  return row?.value ?? null;
-}
-
-function setMeta(key: string, value: string): void {
-  db.prepare(
-    `INSERT INTO meta (key, value) VALUES (?, ?)
-     ON CONFLICT(key) DO UPDATE SET value = excluded.value`,
-  ).run(key, value);
 }
 
 function formatDuration(seconds: number): string {
@@ -190,40 +184,17 @@ async function checkGoals() {
   const row = getConfig();
   if (!currentBot || !row?.enabled || !row.chat_id) return;
   const day = localDay();
-  const dailyLimit = dailyWorkLimit();
-  if (dailyLimit !== null && getMeta('work_daily_last_notified') !== day) {
-    const total = db
-      .prepare(
-        `SELECT COALESCE(SUM(COALESCE(t.ended_at, unixepoch()) - t.started_at), 0) AS seconds
-         FROM tracks t
-         WHERE date(t.started_at, 'unixepoch', 'localtime') = ?`,
-      )
-      .get(day) as { seconds: number };
-    if (total.seconds >= dailyLimit) {
-      try {
-        const dayNames = ['lunes', 'martes', 'miércoles', 'jueves', 'viernes', 'sábado', 'domingo'];
-        await currentBot.api.sendMessage(
-          row.chat_id,
-          'Límite diario alcanzado: ' +
-            formatDuration(dailyLimit) +
-            ' (' +
-            dayNames[localWeekday()] +
-            '). Tiempo acumulado: ' +
-            formatDuration(total.seconds) +
-            '.',
-        );
-        setMeta('work_daily_last_notified', day);
-      } catch (error) {
-        console.error('Telegram daily limit notification failed:', error);
-      }
-    }
-  }
+  const dailyLimits = dailyTelegramLimits();
   const goals = db
     .prepare('SELECT * FROM telegram_goals WHERE enabled = 1')
     .all() as TelegramGoal[];
   for (const goal of goals) {
-    if (goal.project_id === null && dailyLimit !== null) continue;
     if (goal.last_notified_day === day) continue;
+    const targetSeconds =
+      goal.project_id === null && dailyLimits
+        ? (dailyLimits[localWeekday()] ?? 0) * 3600
+        : goal.target_seconds;
+    if (targetSeconds <= 0) continue;
     const params: (string | number)[] = [day];
     let projectSql = '';
     if (goal.project_id !== null) {
@@ -237,7 +208,7 @@ async function checkGoals() {
          WHERE date(t.started_at, 'unixepoch', 'localtime') = ?${projectSql}`,
       )
       .get(...params) as { seconds: number };
-    if (total.seconds < goal.target_seconds) continue;
+    if (total.seconds < targetSeconds) continue;
     const scope =
       goal.project_id === null
         ? 'el total del día'
@@ -250,7 +221,7 @@ async function checkGoals() {
       await currentBot.api.sendMessage(
         row.chat_id,
         'Objetivo alcanzado: ' +
-          formatDuration(goal.target_seconds) +
+          formatDuration(targetSeconds) +
           ' en ' +
           scope +
           '. Tiempo acumulado: ' +

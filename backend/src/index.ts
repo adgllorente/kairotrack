@@ -14,7 +14,6 @@ import { exportRouter } from './routes/export.js';
 import { importRouter } from './routes/import.js';
 import { keysRouter } from './routes/keys.js';
 import { telegramRouter } from './routes/telegram.js';
-import { settingsRouter } from './routes/settings.js';
 import { restartTelegram, stopTelegram } from './lib/telegram.js';
 import { requireAuth } from './middleware/auth.js';
 
@@ -35,7 +34,6 @@ api.route('/export', exportRouter);
 api.route('/import', importRouter);
 api.route('/keys', keysRouter);
 api.route('/telegram', telegramRouter);
-api.route('/settings', settingsRouter);
 app.route('/api', api);
 
 const FRONTEND_DIR = process.env.FRONTEND_DIR || join(process.cwd(), 'frontend/dist');

@@ -35,8 +35,6 @@ export const api = {
     request<T>(path, { method: 'POST', body: body ? JSON.stringify(body) : undefined }),
   patch: <T>(path: string, body?: unknown) =>
     request<T>(path, { method: 'PATCH', body: body ? JSON.stringify(body) : undefined }),
-  put: <T>(path: string, body?: unknown) =>
-    request<T>(path, { method: 'PUT', body: body ? JSON.stringify(body) : undefined }),
   del: <T>(path: string) => request<T>(path, { method: 'DELETE' }),
 };
 
@@ -86,9 +84,9 @@ export type TelegramGoal = {
   project_id: number | null;
   target_seconds: number;
   target_minutes: number;
+  target_minutes_by_day?: (number | null)[];
   enabled: boolean;
   last_notified_day: string | null;
   created_at: number;
   updated_at: number;
 };
-export type WorkSettings = { daily_limits: (number | null)[] };

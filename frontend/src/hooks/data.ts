@@ -8,23 +8,7 @@ import {
   type ApiKeyCreated,
   type TelegramGoal,
   type TelegramStatus,
-  type WorkSettings,
 } from '@/lib/api';
-
-export function useWorkSettings() {
-  return useQuery({
-    queryKey: ['settings', 'work'],
-    queryFn: () => api.get<WorkSettings>('/api/settings/work'),
-  });
-}
-
-export function useUpdateWorkSettings() {
-  const qc = useQueryClient();
-  return useMutation({
-    mutationFn: (settings: WorkSettings) => api.put<WorkSettings>('/api/settings/work', settings),
-    onSuccess: (settings) => qc.setQueryData(['settings', 'work'], settings),
-  });
-}
 
 export function useProjects(includeArchived = false) {
   return useQuery({
@@ -324,8 +308,12 @@ export function useCreateTelegramLinkCode() {
 export function useCreateTelegramGoal() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (data: { project_id?: number | null; target_minutes: number; enabled?: boolean }) =>
-      api.post<TelegramGoal>('/api/telegram/goals', data),
+    mutationFn: (data: {
+      project_id?: number | null;
+      target_minutes: number;
+      target_minutes_by_day?: (number | null)[];
+      enabled?: boolean;
+    }) => api.post<TelegramGoal>('/api/telegram/goals', data),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['telegram', 'goals'] }),
   });
 }
@@ -336,12 +324,19 @@ export function useUpdateTelegramGoal() {
     mutationFn: ({
       id,
       target_minutes,
+      target_minutes_by_day,
       enabled,
     }: {
       id: number;
       target_minutes?: number;
+      target_minutes_by_day?: (number | null)[];
       enabled?: boolean;
-    }) => api.patch<TelegramGoal>('/api/telegram/goals/' + id, { target_minutes, enabled }),
+    }) =>
+      api.patch<TelegramGoal>('/api/telegram/goals/' + id, {
+        target_minutes,
+        target_minutes_by_day,
+        enabled,
+      }),
     onSuccess: () => qc.invalidateQueries({ queryKey: ['telegram', 'goals'] }),
   });
 }

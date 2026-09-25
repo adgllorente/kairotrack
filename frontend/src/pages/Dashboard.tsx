@@ -23,7 +23,6 @@ import {
   useProjects,
   useStatsSummary,
   useTracks,
-  useWorkSettings,
   type SummaryRow,
   type ProjectSummaryRow,
 } from '@/hooks/data';
@@ -253,7 +252,6 @@ function WeeklyByProjectChart() {
   const to = Math.floor(addDays(weekStart, 7).getTime() / 1000);
   const tracks = useTracks({ from, to, limit: 5000 });
   const projects = useProjects();
-  const workSettings = useWorkSettings();
 
   const { days, hourStart, hourEnd, segmentsByDay, usedProjects, dailyTotals, weekTotal } =
     useMemo(() => {
@@ -405,24 +403,7 @@ function WeeklyByProjectChart() {
                   <span
                     className={`text-[10px] tabular-nums ${dailyTotals[i] > 0 ? '' : 'opacity-40'}`}
                   >
-                    <span
-                      className={
-                        workSettings.data?.daily_limits[i] !== null &&
-                        workSettings.data?.daily_limits[i] !== undefined &&
-                        dailyTotals[i] > workSettings.data.daily_limits[i]! * 60
-                          ? 'text-destructive'
-                          : ''
-                      }
-                    >
-                      {formatMinutesShort(dailyTotals[i])}
-                    </span>
-                    {workSettings.data?.daily_limits[i] !== null &&
-                      workSettings.data?.daily_limits[i] !== undefined && (
-                        <span className="text-[10px] opacity-70">
-                          {' '}
-                          / {workSettings.data.daily_limits[i]}h
-                        </span>
-                      )}
+                    {formatMinutesShort(dailyTotals[i])}
                   </span>
                 </div>
               ))}
