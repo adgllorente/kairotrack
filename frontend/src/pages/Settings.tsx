@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Plus, Trash2, Copy, Check, Upload } from 'lucide-react';
 import { format } from 'date-fns';
 import { Button } from '@/components/ui/button';
@@ -20,6 +20,8 @@ import {
   useImportTracks,
   useRevokeApiKey,
   type ImportResult,
+  useUpdateWorkSettings,
+  useWorkSettings,
 } from '@/hooks/data';
 import { useTheme } from '@/components/theme-provider';
 import { NativeSelect } from '@/components/ui/select-native';
@@ -37,6 +39,22 @@ export function SettingsPage() {
   const [copied, setCopied] = useState(false);
   const [lastResult, setLastResult] = useState<ImportResult | null>(null);
   const { theme, setTheme } = useTheme();
+  const workSettings = useWorkSettings();
+  const updateWorkSettings = useUpdateWorkSettings();
+  const [dailyLimits, setDailyLimits] = useState<(number | null)[]>(Array(7).fill(null));
+
+  useEffect(() => {
+    if (workSettings.data) setDailyLimits(workSettings.data.daily_limits);
+  }, [workSettings.data]);
+
+  async function saveDailyLimits() {
+    try {
+      await updateWorkSettings.mutateAsync({ daily_limits: dailyLimits });
+      toast.success('Daily limits saved');
+    } catch {
+      toast.error('Could not save daily limits');
+    }
+  }
 
   async function onPickFile(file: File) {
     let parsed: unknown;
@@ -87,6 +105,51 @@ export function SettingsPage() {
       </Card>
 
       <TelegramSettings />
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Daily work limits</CardTitle>
+          <CardDescription>
+            Set your target time for each day. Leave a day empty if it has no limit. These limits
+            are shown in the weekly dashboard and do not stop tracking.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'].map(
+              (day, index) => (
+                <div key={day} className="space-y-1">
+                  <Label htmlFor={`daily-limit-${index}`}>{day}</Label>
+                  <div className="relative">
+                    <Input
+                      id={`daily-limit-${index}`}
+                      type="number"
+                      min="0"
+                      max="24"
+                      step="0.25"
+                      placeholder="No limit"
+                      value={dailyLimits[index] ?? ''}
+                      onChange={(e) => {
+                        const next = [...dailyLimits];
+                        next[index] = e.target.value === '' ? null : Number(e.target.value);
+                        setDailyLimits(next);
+                      }}
+                    />
+                    <span className="absolute right-3 top-2 text-sm text-muted-foreground">h</span>
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+          <Button
+            className="mt-4"
+            onClick={saveDailyLimits}
+            disabled={updateWorkSettings.isPending}
+          >
+            {updateWorkSettings.isPending ? 'Saving…' : 'Save daily limits'}
+          </Button>
+        </CardContent>
+      </Card>
 
       <Card>
         <CardHeader>

@@ -32,11 +32,7 @@ export function Layout() {
     <div className="min-h-dvh flex flex-col md:flex-row">
       <aside className="md:w-56 md:min-h-dvh md:flex md:flex-col md:border-r border-b md:border-b-0 bg-card">
         <div className="p-4 flex md:block items-center justify-between">
-          <img
-            src="/logo.svg"
-            alt="kairotrack"
-            className="h-10 w-auto md:mx-auto dark:invert"
-          />
+          <img src="/logo.svg" alt="kairotrack" className="h-10 w-auto md:mx-auto dark:invert" />
           <Button
             variant="ghost"
             size="icon"

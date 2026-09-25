@@ -8,7 +8,23 @@ import {
   type ApiKeyCreated,
   type TelegramGoal,
   type TelegramStatus,
+  type WorkSettings,
 } from '@/lib/api';
+
+export function useWorkSettings() {
+  return useQuery({
+    queryKey: ['settings', 'work'],
+    queryFn: () => api.get<WorkSettings>('/api/settings/work'),
+  });
+}
+
+export function useUpdateWorkSettings() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (settings: WorkSettings) => api.put<WorkSettings>('/api/settings/work', settings),
+    onSuccess: (settings) => qc.setQueryData(['settings', 'work'], settings),
+  });
+}
 
 export function useProjects(includeArchived = false) {
   return useQuery({

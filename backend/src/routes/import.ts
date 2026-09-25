@@ -37,7 +37,7 @@ importRouter.post('/', async (c) => {
   const rows: ImportRow[] = Array.isArray(body)
     ? (body as ImportRow[])
     : Array.isArray((body as { tracks?: unknown })?.tracks)
-      ? ((body as { tracks: ImportRow[] }).tracks)
+      ? (body as { tracks: ImportRow[] }).tracks
       : [];
   if (rows.length === 0) return c.json({ error: 'no_tracks' }, 400);
 

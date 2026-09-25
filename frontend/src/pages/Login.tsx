@@ -22,11 +22,7 @@ export function LoginPage() {
     <div className="min-h-dvh flex items-center justify-center p-4 bg-background">
       <Card className="w-full max-w-sm">
         <CardHeader>
-          <img
-            src="/logo.svg"
-            alt="kairotrack"
-            className="h-9 w-auto dark:invert"
-          />
+          <img src="/logo.svg" alt="kairotrack" className="h-9 w-auto dark:invert" />
           <CardDescription>Sign in to your tracker</CardDescription>
         </CardHeader>
         <CardContent>

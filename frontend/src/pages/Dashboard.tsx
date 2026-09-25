@@ -12,15 +12,7 @@ import {
   XAxis,
   YAxis,
 } from 'recharts';
-import {
-  startOfMonth,
-  startOfWeek,
-  startOfYear,
-  subDays,
-  addDays,
-  format,
-  getDay,
-} from 'date-fns';
+import { startOfMonth, startOfWeek, startOfYear, subDays, addDays, format, getDay } from 'date-fns';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,6 +23,7 @@ import {
   useProjects,
   useStatsSummary,
   useTracks,
+  useWorkSettings,
   type SummaryRow,
   type ProjectSummaryRow,
 } from '@/hooks/data';
@@ -147,71 +140,70 @@ export function DashboardPage() {
         </div>
 
         <div className="grid lg:grid-cols-2 gap-4">
-        <Card>
-          <CardHeader>
-            <CardTitle>By project</CardTitle>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <PieChart>
-                <Pie
-                  data={projectRows}
-                  dataKey="seconds"
-                  nameKey="project_name"
-                  outerRadius={90}
-                  innerRadius={50}
-                >
-                  {projectRows.map((entry, i) => (
-                    <Cell key={i} fill={entry.project_color || '#6366f1'} />
-                  ))}
-                </Pie>
-                <Tooltip
-                  contentStyle={{
-                    background: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                  }}
-                  formatter={(v: number) => [`${(v / 3600).toFixed(2)}h`, 'Hours']}
-                />
-                <Legend />
-              </PieChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          <Card>
+            <CardHeader>
+              <CardTitle>By project</CardTitle>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={projectRows}
+                    dataKey="seconds"
+                    nameKey="project_name"
+                    outerRadius={90}
+                    innerRadius={50}
+                  >
+                    {projectRows.map((entry, i) => (
+                      <Cell key={i} fill={entry.project_color || '#6366f1'} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      background: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                    }}
+                    formatter={(v: number) => [`${(v / 3600).toFixed(2)}h`, 'Hours']}
+                  />
+                  <Legend />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardHeader>
-            <CardTitle>Trend</CardTitle>
-          </CardHeader>
-          <CardContent className="h-72">
-            <ResponsiveContainer width="100%" height="100%">
-              <LineChart data={summaryRows.map((r) => ({ ...r, hours: r.seconds / 3600 }))}>
-                <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
-                <XAxis
-                  dataKey="bucket"
-                  stroke="currentColor"
-                  className="text-xs text-muted-foreground"
-                />
-                <YAxis stroke="currentColor" className="text-xs text-muted-foreground" />
-                <Tooltip
-                  contentStyle={{
-                    background: 'hsl(var(--popover))',
-                    border: '1px solid hsl(var(--border))',
-                  }}
-                  formatter={(v: number) => [`${v.toFixed(2)}h`, 'Hours']}
-                />
-                <Line
-                  type="monotone"
-                  dataKey="hours"
-                  stroke="#6366f1"
-                  strokeWidth={2}
-                  dot={false}
-                />
-              </LineChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
-      </div>
-
+          <Card>
+            <CardHeader>
+              <CardTitle>Trend</CardTitle>
+            </CardHeader>
+            <CardContent className="h-72">
+              <ResponsiveContainer width="100%" height="100%">
+                <LineChart data={summaryRows.map((r) => ({ ...r, hours: r.seconds / 3600 }))}>
+                  <CartesianGrid strokeDasharray="3 3" className="stroke-border" />
+                  <XAxis
+                    dataKey="bucket"
+                    stroke="currentColor"
+                    className="text-xs text-muted-foreground"
+                  />
+                  <YAxis stroke="currentColor" className="text-xs text-muted-foreground" />
+                  <Tooltip
+                    contentStyle={{
+                      background: 'hsl(var(--popover))',
+                      border: '1px solid hsl(var(--border))',
+                    }}
+                    formatter={(v: number) => [`${v.toFixed(2)}h`, 'Hours']}
+                  />
+                  <Line
+                    type="monotone"
+                    dataKey="hours"
+                    stroke="#6366f1"
+                    strokeWidth={2}
+                    dot={false}
+                  />
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        </div>
       </div>
     </div>
   );
@@ -261,86 +253,88 @@ function WeeklyByProjectChart() {
   const to = Math.floor(addDays(weekStart, 7).getTime() / 1000);
   const tracks = useTracks({ from, to, limit: 5000 });
   const projects = useProjects();
+  const workSettings = useWorkSettings();
 
-  const { days, hourStart, hourEnd, segmentsByDay, usedProjects, dailyTotals, weekTotal } = useMemo(() => {
-    const dayList = Array.from({ length: 7 }, (_, i) => {
-      const d = addDays(weekStart, i);
-      return { date: d, label: format(d, 'EEE d') };
-    });
-    const pmap = new Map<number, Project>();
-    (projects.data || []).forEach((p) => pmap.set(p.id, p));
-
-    const nowSec = Math.floor(Date.now() / 1000);
-    const weekStartSec = Math.floor(weekStart.getTime() / 1000);
-    const segs: WeekSegment[] = [];
-
-    ((tracks.data as Track[] | undefined) || []).forEach((t) => {
-      const start = t.started_at;
-      const end = t.ended_at ?? nowSec;
-      if (end <= start) return;
-      const project = pmap.get(t.project_id) || {
-        id: t.project_id,
-        name: `#${t.project_id}`,
-        color: '#6366f1',
-        archived_at: null,
-        created_at: 0,
-      };
-      let cur = start;
-      while (cur < end) {
-        const dayIdx = Math.floor((cur - weekStartSec) / 86400);
-        if (dayIdx < 0 || dayIdx >= 7) break;
-        const dayStartSec = weekStartSec + dayIdx * 86400;
-        const dayEndSec = dayStartSec + 86400;
-        const segEnd = Math.min(end, dayEndSec);
-        segs.push({
-          dayIdx,
-          startMin: (cur - dayStartSec) / 60,
-          endMin: (segEnd - dayStartSec) / 60,
-          project,
-          note: t.note,
-        });
-        cur = segEnd;
-      }
-    });
-
-    let hStart = FALLBACK_HOUR_START;
-    let hEnd = FALLBACK_HOUR_END;
-    if (segs.length > 0) {
-      let minMin = Infinity;
-      let maxMin = -Infinity;
-      segs.forEach((s) => {
-        if (s.startMin < minMin) minMin = s.startMin;
-        if (s.endMin > maxMin) maxMin = s.endMin;
+  const { days, hourStart, hourEnd, segmentsByDay, usedProjects, dailyTotals, weekTotal } =
+    useMemo(() => {
+      const dayList = Array.from({ length: 7 }, (_, i) => {
+        const d = addDays(weekStart, i);
+        return { date: d, label: format(d, 'EEE d') };
       });
-      hStart = Math.max(0, Math.floor(minMin / 60) - 1);
-      hEnd = Math.min(24, Math.ceil(maxMin / 60) + 1);
-      if (hEnd <= hStart) hEnd = Math.min(24, hStart + 1);
-    }
+      const pmap = new Map<number, Project>();
+      (projects.data || []).forEach((p) => pmap.set(p.id, p));
 
-    const byDay: WeekSegment[][] = Array.from({ length: 7 }, () => []);
-    const totals: number[] = Array.from({ length: 7 }, () => 0);
-    segs.forEach((s) => {
-      byDay[s.dayIdx].push(s);
-      totals[s.dayIdx] += s.endMin - s.startMin;
-    });
+      const nowSec = Math.floor(Date.now() / 1000);
+      const weekStartSec = Math.floor(weekStart.getTime() / 1000);
+      const segs: WeekSegment[] = [];
 
-    const usedIds = new Set<number>();
-    segs.forEach((s) => usedIds.add(s.project.id));
-    const used = Array.from(usedIds)
-      .map((id) => pmap.get(id))
-      .filter((p): p is Project => Boolean(p))
-      .sort((a, b) => a.name.localeCompare(b.name));
+      ((tracks.data as Track[] | undefined) || []).forEach((t) => {
+        const start = t.started_at;
+        const end = t.ended_at ?? nowSec;
+        if (end <= start) return;
+        const project = pmap.get(t.project_id) || {
+          id: t.project_id,
+          name: `#${t.project_id}`,
+          color: '#6366f1',
+          archived_at: null,
+          created_at: 0,
+        };
+        let cur = start;
+        while (cur < end) {
+          const dayIdx = Math.floor((cur - weekStartSec) / 86400);
+          if (dayIdx < 0 || dayIdx >= 7) break;
+          const dayStartSec = weekStartSec + dayIdx * 86400;
+          const dayEndSec = dayStartSec + 86400;
+          const segEnd = Math.min(end, dayEndSec);
+          segs.push({
+            dayIdx,
+            startMin: (cur - dayStartSec) / 60,
+            endMin: (segEnd - dayStartSec) / 60,
+            project,
+            note: t.note,
+          });
+          cur = segEnd;
+        }
+      });
 
-    return {
-      days: dayList,
-      hourStart: hStart,
-      hourEnd: hEnd,
-      segmentsByDay: byDay,
-      usedProjects: used,
-      dailyTotals: totals,
-      weekTotal: totals.reduce((a, b) => a + b, 0),
-    };
-  }, [tracks.data, projects.data, weekStart]);
+      let hStart = FALLBACK_HOUR_START;
+      let hEnd = FALLBACK_HOUR_END;
+      if (segs.length > 0) {
+        let minMin = Infinity;
+        let maxMin = -Infinity;
+        segs.forEach((s) => {
+          if (s.startMin < minMin) minMin = s.startMin;
+          if (s.endMin > maxMin) maxMin = s.endMin;
+        });
+        hStart = Math.max(0, Math.floor(minMin / 60) - 1);
+        hEnd = Math.min(24, Math.ceil(maxMin / 60) + 1);
+        if (hEnd <= hStart) hEnd = Math.min(24, hStart + 1);
+      }
+
+      const byDay: WeekSegment[][] = Array.from({ length: 7 }, () => []);
+      const totals: number[] = Array.from({ length: 7 }, () => 0);
+      segs.forEach((s) => {
+        byDay[s.dayIdx].push(s);
+        totals[s.dayIdx] += s.endMin - s.startMin;
+      });
+
+      const usedIds = new Set<number>();
+      segs.forEach((s) => usedIds.add(s.project.id));
+      const used = Array.from(usedIds)
+        .map((id) => pmap.get(id))
+        .filter((p): p is Project => Boolean(p))
+        .sort((a, b) => a.name.localeCompare(b.name));
+
+      return {
+        days: dayList,
+        hourStart: hStart,
+        hourEnd: hEnd,
+        segmentsByDay: byDay,
+        usedProjects: used,
+        dailyTotals: totals,
+        weekTotal: totals.reduce((a, b) => a + b, 0),
+      };
+    }, [tracks.data, projects.data, weekStart]);
 
   const hourCount = hourEnd - hourStart;
   const gridHeight = hourCount * PX_PER_HOUR;
@@ -411,7 +405,24 @@ function WeeklyByProjectChart() {
                   <span
                     className={`text-[10px] tabular-nums ${dailyTotals[i] > 0 ? '' : 'opacity-40'}`}
                   >
-                    {formatMinutesShort(dailyTotals[i])}
+                    <span
+                      className={
+                        workSettings.data?.daily_limits[i] !== null &&
+                        workSettings.data?.daily_limits[i] !== undefined &&
+                        dailyTotals[i] > workSettings.data.daily_limits[i]! * 60
+                          ? 'text-destructive'
+                          : ''
+                      }
+                    >
+                      {formatMinutesShort(dailyTotals[i])}
+                    </span>
+                    {workSettings.data?.daily_limits[i] !== null &&
+                      workSettings.data?.daily_limits[i] !== undefined && (
+                        <span className="text-[10px] opacity-70">
+                          {' '}
+                          / {workSettings.data.daily_limits[i]}h
+                        </span>
+                      )}
                   </span>
                 </div>
               ))}
@@ -433,7 +444,7 @@ function WeeklyByProjectChart() {
                     />
                   ))}
                   {segmentsByDay[i].map((s, si) => {
-                    const top = ((s.startMin / 60) - hourStart) * PX_PER_HOUR;
+                    const top = (s.startMin / 60 - hourStart) * PX_PER_HOUR;
                     const height = Math.max(2, ((s.endMin - s.startMin) / 60) * PX_PER_HOUR);
                     return (
                       <div
@@ -446,7 +457,9 @@ function WeeklyByProjectChart() {
                         }}
                         title={`${s.project.name}${s.note ? ` — ${s.note}` : ''}\n${formatMinHM(s.startMin)} – ${formatMinHM(s.endMin)} (${formatDurationHM(s.endMin - s.startMin)})`}
                       >
-                        {height > 16 && <div className="font-medium truncate">{s.project.name}</div>}
+                        {height > 16 && (
+                          <div className="font-medium truncate">{s.project.name}</div>
+                        )}
                         {height > 30 && (
                           <div className="opacity-80 tabular-nums">
                             {formatMinHM(s.startMin)}–{formatMinHM(s.endMin)}
@@ -459,7 +472,10 @@ function WeeklyByProjectChart() {
               ))}
             </div>
           </div>
-          <div className="relative text-muted-foreground tabular-nums" style={{ height: gridHeight }}>
+          <div
+            className="relative text-muted-foreground tabular-nums"
+            style={{ height: gridHeight }}
+          >
             {hourTicks.map((h, i) => (
               <div
                 key={h}
