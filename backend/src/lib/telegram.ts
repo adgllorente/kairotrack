@@ -192,7 +192,7 @@ async function checkGoals() {
     if (goal.last_notified_day === day) continue;
     const targetSeconds =
       goal.project_id === null && dailyLimits
-        ? (dailyLimits[localWeekday()] ?? 0) * 3600
+        ? (dailyLimits[localWeekday()] ?? 0) * 60
         : goal.target_seconds;
     if (targetSeconds <= 0) continue;
     const params: (string | number)[] = [day];
