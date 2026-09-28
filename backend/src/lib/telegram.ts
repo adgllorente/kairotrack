@@ -238,6 +238,25 @@ async function checkGoals() {
 }
 
 function registerHandlers(currentBot: Bot) {
+  currentBot.use(async (ctx, next) => {
+    const updateType = ctx.update.message
+      ? 'message'
+      : ctx.update.callback_query
+        ? 'callback_query'
+        : 'update';
+    const chatId = ctx.chat?.id ?? 'unknown';
+    const text = ctx.update.message?.text;
+    console.log(
+      `[telegram] update type=${updateType} chat=${chatId}${text ? ` text=${JSON.stringify(text)}` : ''}`,
+    );
+    await next();
+  });
+
+  currentBot.catch((error) => {
+    console.error('[telegram] update handler failed:', error.error);
+    if (error.ctx) console.error('[telegram] failed update:', JSON.stringify(error.ctx.update));
+  });
+
   currentBot.command('start', async (ctx) => {
     if (await requireAuthorized(ctx)) await showStartMenu(ctx);
   });
@@ -292,6 +311,12 @@ function registerHandlers(currentBot: Bot) {
       await ctx.reply(
         'Comandos disponibles:\n/start — iniciar un track\n/link CÓDIGO — vincular este chat\n/active — ver el track activo\n/stop — detenerlo\n/today — resumen de hoy\n/week — resumen de la semana\n/help — mostrar esta ayuda',
       );
+  });
+
+  currentBot.on('message:text', async (ctx) => {
+    if (await requireAuthorized(ctx)) {
+      await ctx.reply('No reconozco ese mensaje. Usa /help para ver los comandos disponibles.');
+    }
   });
 
   currentBot.on('callback_query:data', async (ctx) => {
@@ -352,6 +377,7 @@ export async function stopTelegram(): Promise<void> {
   if (goalTimer) clearInterval(goalTimer);
   goalTimer = null;
   if (bot) {
+    console.log('[telegram] stopping bot');
     await bot.stop();
     bot = null;
   }
@@ -361,6 +387,7 @@ export async function restartTelegram(): Promise<{ username: string } | null> {
   await stopTelegram();
   const row = getConfig();
   if (!row?.enabled) return null;
+  console.log('[telegram] starting configured bot');
   const token = decryptTelegramToken(row.token_encrypted);
   const nextBot = new Bot(token);
   const me = await nextBot.api.getMe();
@@ -378,16 +405,18 @@ export async function restartTelegram(): Promise<{ username: string } | null> {
   ).run(me.username);
   bot = nextBot;
   registerHandlers(nextBot);
-  goalTimer = setInterval(() => void checkGoals(), GOAL_CHECK_INTERVAL_MS);
-  void checkGoals();
+  goalTimer = setInterval(() => {
+    void checkGoals().catch((error) => console.error('[telegram] goal check failed:', error));
+  }, GOAL_CHECK_INTERVAL_MS);
+  void checkGoals().catch((error) => console.error('[telegram] initial goal check failed:', error));
   void nextBot
     .start({
       drop_pending_updates: true,
       onStart: () => console.log('Telegram bot @' + me.username + ' started'),
     })
     .catch((error) => {
-      console.error('Telegram bot stopped:', error);
-      bot = null;
+      console.error('[telegram] polling stopped:', error);
+      if (bot === nextBot) bot = null;
     });
   return { username: me.username };
 }
