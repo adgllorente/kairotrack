@@ -169,14 +169,24 @@ async function sendSummary(ctx: { reply: (text: string) => Promise<unknown> }, w
     .all() as Array<{ project_name: string; seconds: number }>;
   const total = rows.reduce((sum, row) => sum + row.seconds, 0);
   const title = week ? 'Resumen de esta semana' : 'Resumen de hoy';
+  const dailyLimitMinutes = week ? null : (dailyTelegramLimits()?.[localWeekday()] ?? null);
+  const summary = title + ': ' + formatDuration(total);
+  const progress =
+    dailyLimitMinutes === null
+      ? ''
+      : '\nTiempo restante: ' +
+        formatDuration(Math.max(0, dailyLimitMinutes * 60 - total)) +
+        '\nCompletado: ' +
+        Math.round((total / (dailyLimitMinutes * 60)) * 100) +
+        '%';
   if (rows.length === 0) {
-    await ctx.reply(title + ': 0 min.');
+    await ctx.reply(summary + progress + '.');
     return;
   }
   const details = rows
     .map((row) => '• ' + row.project_name + ': ' + formatDuration(row.seconds))
     .join('\n');
-  await ctx.reply(title + ': ' + formatDuration(total) + '\n\n' + details);
+  await ctx.reply(summary + progress + '\n\n' + details);
 }
 
 async function checkGoals() {
